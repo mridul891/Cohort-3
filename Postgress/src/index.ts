@@ -27,6 +27,11 @@ const main = async () => {
   );
 
   console.log(response3.rows);
+  // Forgein Key
+  const response4 = await pgClient.query(
+    "CREATE TABLE addresses ( id SERIAL PRIMARY KEY,user_id INTEGER NOT NULL,city VARCHAR(100) NOT NULL,country VARCHAR(100) NOT NULL,street VARCHAR(255) NOT NULL,pincode VARCHAR(20),created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE; )"
+  );
+  console.log(response4 )
 };
 main();
 
@@ -35,15 +40,27 @@ app.post("/", async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
     const email = req.body.email;
+
+    const city = req.body.city;
+    const country = req.body.country;
+    const street = req.body.street;
+
     const response = await pgClient.query(
       `INSERT INTO users (username, email, password) VALUES ('${username}', '${email}', '${password}');`
     );
 
     // How to master the sql Injection
-    const query = `INSERT INTO users (username, email, password) VALUES ($1, $2, $3);`;
+    const query = `INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id; `;
     const values = [username, email, password];
 
-    const response1 = await pgClient.query(query, values);
+    const response1= await pgClient.query(query, values);
+    const user_id = response1.rows[0].id
+    // Foreign Key Ussage
+    const query1 = `INSERT INTO addresses (city, country, street ,user_id) VALUES ($1, $2, $3 ,$4);`;
+    const values1 = [city, country, street ,user_id];
+
+    const response2 = await pgClient.query(query1, values1);
+
     res.json({
       message: "User Signed in",
     });
@@ -55,3 +72,16 @@ app.post("/", async (req, res) => {
 });
 
 app.listen(3000);
+
+//  Creation of Foreign Key
+/*
+CREATE TABLE addresses (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  city VARCHAR(100) NOT NULL,
+  country VARCHAR(100) NOT NULL,
+  street VARCHAR(255) NOT NULL,
+  pincode VARCHAR(20),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);*/
