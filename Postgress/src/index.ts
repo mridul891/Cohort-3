@@ -31,7 +31,7 @@ const main = async () => {
   const response4 = await pgClient.query(
     "CREATE TABLE addresses ( id SERIAL PRIMARY KEY,user_id INTEGER NOT NULL,city VARCHAR(100) NOT NULL,country VARCHAR(100) NOT NULL,street VARCHAR(255) NOT NULL,pincode VARCHAR(20),created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE; )"
   );
-  console.log(response4 )
+  console.log(response4);
 };
 main();
 
@@ -53,14 +53,18 @@ app.post("/", async (req, res) => {
     const query = `INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id; `;
     const values = [username, email, password];
 
-    const response1= await pgClient.query(query, values);
-    const user_id = response1.rows[0].id
+    const response1 = await pgClient.query(query, values);
+    const user_id = response1.rows[0].id;
+
+    // Transaction begin
+    await pgClient.query("BEGIN;");
+
     // Foreign Key Ussage
     const query1 = `INSERT INTO addresses (city, country, street ,user_id) VALUES ($1, $2, $3 ,$4);`;
-    const values1 = [city, country, street ,user_id];
+    const values1 = [city, country, street, user_id];
 
     const response2 = await pgClient.query(query1, values1);
-
+    await pgClient.query("COMMIT;");
     res.json({
       message: "User Signed in",
     });
@@ -85,3 +89,9 @@ CREATE TABLE addresses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );*/
+
+// How to use Transaction
+
+// use Pgclient.query("Begin;") is to begin the transaction
+// use Pgclient.query("Commit;") is to begin the transaction
+// If the server fails in between then there will be no entry in the  database Due to which this transaction is beneficial
